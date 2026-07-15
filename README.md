@@ -6,6 +6,8 @@ An Iron Man–inspired holographic orb built with **Next.js**, **Three.js**, and
 
 https://github.com/user-attachments/assets/91578a83-9a27-44e8-84b0-96defcfd7366
 
+📱 **[Watch the demo on Instagram](https://www.instagram.com/p/DayJ17OTwvx/)**
+
 ## Getting started
 
 ```bash
