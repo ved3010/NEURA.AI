@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E.D.I.T.H. — Tactical AI & 3D Holographic Core</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="three.min.js"></script>
+</head>
+<body class="mode-floating">
+  <div class="hud-overlay"></div>
+
+  <!-- FLOATING 3D ARC REACTOR ORB WIDGET -->
+  <div id="floating-orb-widget" class="floating-orb-container" onclick="toggleExpandOrb(event)">
+    <div id="orb-3d-canvas-container" class="orb-3d-canvas-container"></div>
+    <div class="orb-label">E.D.I.T.H.</div>
+
+    <!-- EXPANDABLE FLOATING OVERLAY CARD -->
+    <div id="orb-expanded-card" class="orb-expanded-card hidden" onclick="event.stopPropagation()">
+      <div class="card-header">
+        <span class="card-title">E.D.I.T.H. TACTICAL OVERLAY</span>
+        <button class="minimize-btn" onclick="toggleExpandOrb(event)">✕</button>
+      </div>
+
+      <div class="quick-telemetry">
+        <div class="t-badge"><span class="t-label">CPU</span> <span id="orb-cpu">18%</span></div>
+        <div class="t-badge"><span class="t-label">RAM</span> <span id="orb-ram">42%</span></div>
+        <div class="t-badge"><span class="t-label">NET</span> <span id="orb-net">65 MB/s</span></div>
+      </div>
+
+      <div class="quick-protocols">
+        <button class="q-btn" onclick="triggerProtocol('edith')">E.D.I.T.H.</button>
+        <button class="q-btn" onclick="triggerProtocol('sentry')">SENTRY</button>
+        <button class="q-btn" onclick="triggerProtocol('stealth')">STEALTH</button>
+        <button class="q-btn" onclick="triggerProtocol('overclock')">BOOST</button>
+      </div>
+
+      <div class="orb-response-bubble" id="orb-log">
+        [E.D.I.T.H.] 3D Neural Matrix active, boss. Talk or type to command.
+      </div>
+
+      <div class="orb-input-bar">
+        <input type="text" id="orb-input" placeholder="Ask E.D.I.T.H. anything..." onkeydown="handleOrbInput(event)">
+        <button class="orb-send-btn" onclick="submitOrbCommand()">SEND</button>
+      </div>
+      
+      <div class="card-footer">
+        <button class="view-switch-btn" onclick="switchView('full')">EXPAND TO FULL HUD 🗖</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULL HUD DASHBOARD VIEW -->
+  <div id="full-hud-view" class="full-hud-view hidden">
+    <header class="hud-header">
+      <div class="brand">
+        <div class="logo-icon"></div>
+        <div class="title-group">
+          <h1>E.D.I.T.H.</h1>
+          <span class="subtitle">EVEN IN DEATH, I'M THE HERO // TACTICAL HUD v2.0</span>
+        </div>
+      </div>
+      
+      <div class="system-status">
+        <button class="view-switch-btn" onclick="switchView('floating')">MINIMIZE TO FLOATING ORB 🗗</button>
+        <div class="status-indicator online"></div>
+        <span id="system-status-text">NEURAL LINK: ONLINE</span>
+        <span class="time-display" id="clock-display">00:00:00 UTC</span>
+      </div>
+    </header>
+
+    <main class="hud-grid">
+      <!-- Left Column: Subsystem Gauges -->
+      <section class="hud-card telemetry-panel">
+        <h2><span class="bracket">[</span> SYSTEM TELEMETRY <span class="bracket">]</span></h2>
+        
+        <div class="gauge-container">
+          <div class="gauge-box">
+            <svg class="circle-svg" viewBox="0 0 100 100">
+              <circle class="circle-bg" cx="50" cy="50" r="40"></circle>
+              <circle class="circle-bar" id="cpu-circle" cx="50" cy="50" r="40"></circle>
+            </svg>
+            <div class="gauge-val" id="cpu-val">24%</div>
+            <div class="gauge-label">CPU CORE</div>
+          </div>
+
+          <div class="gauge-box">
+            <svg class="circle-svg" viewBox="0 0 100 100">
+              <circle class="circle-bg" cx="50" cy="50" r="40"></circle>
+              <circle class="circle-bar" id="ram-circle" cx="50" cy="50" r="40"></circle>
+            </svg>
+            <div class="gauge-val" id="ram-val">42%</div>
+            <div class="gauge-label">RAM BUFFER</div>
+          </div>
+        </div>
+
+        <div class="stat-bars">
+          <div class="bar-row">
+            <span>DISK STORAGE</span>
+            <div class="progress-bg"><div class="progress-bar" id="disk-bar" style="width: 38%;"></div></div>
+            <span id="disk-text">38%</span>
+          </div>
+          <div class="bar-row">
+            <span>NETWORK BANDWIDTH</span>
+            <div class="progress-bg"><div class="progress-bar cyan" id="net-bar" style="width: 65%;"></div></div>
+            <span id="net-text">65 MB/s</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Center Column: Animated 3D Target Reticle & Audio Reactor -->
+      <section class="hud-card center-stage">
+        <div class="canvas-wrapper" id="hud-3d-wrapper">
+          <div id="hud-3d-container" style="width: 320px; height: 320px;"></div>
+          <div class="reticle-core-label">
+            <div class="core-title" id="core-state-title">E.D.I.T.H. CORE</div>
+            <div class="core-status" id="core-state-sub">SYSTEMS NOMINAL</div>
+          </div>
+        </div>
+        
+        <div class="voice-indicator">
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="voice-text">VOICE ARRAY ACTIVE</span>
+        </div>
+      </section>
+
+      <!-- Right Column: EDITH Protocol Launcher -->
+      <section class="hud-card protocol-panel">
+        <h2><span class="bracket">[</span> STARK PROTOCOLS <span class="bracket">]</span></h2>
+        
+        <div class="protocol-grid">
+          <button class="protocol-btn active" onclick="triggerProtocol('edith')">
+            <span class="proto-id">PROTO-01</span>
+            <span class="proto-name">PROTOCOL E.D.I.T.H.</span>
+          </button>
+
+          <button class="protocol-btn" onclick="triggerProtocol('sentry')">
+            <span class="proto-id">PROTO-02</span>
+            <span class="proto-name">PROTOCOL SENTRY</span>
+          </button>
+
+          <button class="protocol-btn" onclick="triggerProtocol('stealth')">
+            <span class="proto-id">PROTO-03</span>
+            <span class="proto-name">PROTOCOL STEALTH</span>
+          </button>
+
+          <button class="protocol-btn" onclick="triggerProtocol('house_party')">
+            <span class="proto-id">PROTO-04</span>
+            <span class="proto-name">HOUSE PARTY</span>
+          </button>
+
+          <button class="protocol-btn" onclick="triggerProtocol('overclock')">
+            <span class="proto-id">PROTO-05</span>
+            <span class="proto-name">OVERCLOCK</span>
+          </button>
+
+          <button class="protocol-btn warning" onclick="triggerProtocol('lockdown')">
+            <span class="proto-id">PROTO-06</span>
+            <span class="proto-name">LOCKDOWN</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Full Width Bottom Panel: Terminal Console Log -->
+      <section class="hud-card terminal-panel">
+        <div class="terminal-header">
+          <h2><span class="bracket">[</span> TACTICAL FEED & COMMAND TERMINAL <span class="bracket">]</span></h2>
+          <span class="clear-btn" onclick="clearTerminal()">CLEAR LOGS</span>
+        </div>
+        
+        <div class="terminal-body" id="terminal-log">
+          <div class="log-entry system">[SYSTEM] E.D.I.T.H. Tactical AI Engine v2.0 Initialised.</div>
+          <div class="log-entry info">[INFO] FastMCP server bound to http://127.0.0.1:8000/sse</div>
+          <div class="log-entry edith">[E.D.I.T.H.] 3D Holographic Orb matrix active, boss. Ready for engagement.</div>
+        </div>
+
+        <div class="terminal-input-bar">
+          <span class="prompt">&gt;</span>
+          <input type="text" id="cmd-input" placeholder="Type tactical command or query..." onkeydown="handleInput(event)">
+          <button class="send-btn" onclick="submitCommand()">SEND</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
