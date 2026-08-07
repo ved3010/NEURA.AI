@@ -1,12 +1,13 @@
 """
-ULTRON // E.D.I.T.H. Native macOS Desktop AI Agent
-==================================================
-Native desktop application window (no browser tabs/URLs) featuring the 3D Holographic Orb,
-MediaPipe hand gesture tracking, and E.D.I.T.H. backend tool intelligence.
+ULTRON Native macOS Desktop AI Agent Window
+===========================================
+Runs Sagar Tamang's exact 3D Ultron Orb & MediaPipe UI in a native desktop window.
 """
 
 import sys
 import os
+import time
+import subprocess
 import webview
 
 # Import E.D.I.T.H. Engine Tools
@@ -18,7 +19,7 @@ from edith.memory import remember_fact, recall_memory, add_task, get_tasks
 
 
 class UltronAgentApi:
-    """Native Python API bound directly to the Desktop AI Agent UI."""
+    """Native Python API bound directly to the Ultron Desktop UI."""
 
     def get_telemetry(self):
         return get_system_telemetry()
@@ -42,18 +43,30 @@ class UltronAgentApi:
         return get_tasks()
 
 
-def main():
-    api = UltronAgentApi()
-    
-    # Absolute path to local html file
-    html_file = os.path.abspath("hud/index.html")
+def ensure_nextjs_server():
+    """Ensure Ultron Next.js server is active on port 3000."""
+    try:
+        import urllib.request
+        urllib.request.urlopen("http://localhost:3000", timeout=1.5)
+        print("[ULTRON] Active on http://localhost:3000")
+    except Exception:
+        print("[ULTRON] Starting Next.js server...")
+        cmd = "PATH=\"/Users/li/evai/node_bin/bin:$PATH\" npm run dev"
+        subprocess.Popen(cmd, shell=True, cwd=os.path.abspath("ultron"))
+        time.sleep(3)
 
-    # Create native macOS desktop application window (no browser UI)
+
+def main():
+    ensure_nextjs_server()
+    api = UltronAgentApi()
+
+    # Create native macOS desktop app window pointing directly to Sagar Tamang's Ultron UI
     window = webview.create_window(
         title="ULTRON // Desktop AI Agent",
-        url=f"file://{html_file}",
-        width=1120,
-        height=740,
+        url="http://localhost:3000",
+        width=1180,
+        height=760,
+        background_color="#030712",
         resizable=True,
         on_top=True,
         js_api=api
