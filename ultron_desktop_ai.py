@@ -1,14 +1,9 @@
 """
-ULTRON // E.D.I.T.H. Floating Desktop AI Overlay
-==================================================
-Combines Sagar Tamang's 3D Holographic Ultron Orb & MediaPipe Hand Tracking with
-E.D.I.T.H.'s Next-Gen AI MCP Tool Engine in a transparent, always-on-top, frameless desktop window.
+ULTRON // E.D.I.T.H. Desktop AI Application Window
 """
 
 import sys
 import os
-import time
-import subprocess
 import webview
 
 # Import E.D.I.T.H. Engine Tools
@@ -20,8 +15,6 @@ from edith.memory import remember_fact, recall_memory, add_task, get_tasks
 
 
 class UltronEdithApi:
-    """Python API exposed to the Ultron 3D Floating Overlay."""
-
     def get_telemetry(self):
         return get_system_telemetry()
 
@@ -47,16 +40,14 @@ class UltronEdithApi:
 def main():
     api = UltronEdithApi()
 
-    # Create frameless, always-on-top, transparent floating desktop window
+    # Create native macOS desktop app window
     window = webview.create_window(
-        title="ULTRON // E.D.I.T.H. Floating Desktop AI",
+        title="ULTRON // E.D.I.T.H. Desktop AI",
         url="http://localhost:3000",
-        width=540,
-        height=540,
-        frameless=True,
-        on_top=True,
-        transparent=True,
+        width=1100,
+        height=720,
         resizable=True,
+        on_top=True,
         js_api=api
     )
 
