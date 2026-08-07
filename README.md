@@ -1,6 +1,6 @@
-# F.R.I.D.A.Y. — Tony Stark Demo
+# E.V. — Tony Stark Demo
 
-🎉 **Official Public Release:** F.R.I.D.A.Y. is now officially released to the public as a standalone application! You can easily install it without needing to set up the development environment.
+🎉 **Official Public Release:** E.V. is now officially released to the public as a standalone application! You can easily install it without needing to set up the development environment.
 
 * **Download:** Visit [http://friday.feynmanpi.com/](http://friday.feynmanpi.com/)
 * **Installers Available:** `.exe` for Windows and `.dmg` for macOS.
