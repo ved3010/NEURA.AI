@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E.D.I.T.H. — 3D Holographic Core</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #030712;
+      color: #00f0ff;
+      font-family: 'Orbitron', 'Rajdhani', sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .hud-overlay-text {
+      position: absolute;
+      bottom: 40px;
+      text-align: center;
+      z-index: 10;
+      pointer-events: none;
+    }
+    .title {
+      font-size: 2.2rem;
+      letter-spacing: 6px;
+      text-shadow: 0 0 20px #00f0ff;
+      margin-bottom: 0.4rem;
+    }
+    .subtitle {
+      font-size: 0.9rem;
+      letter-spacing: 3px;
+      color: #648ba6;
+    }
+  </style>
+  <script src="three.min.js"></script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  
+  <div class="hud-overlay-text">
+    <div class="title">E.D.I.T.H. 3D HOLOGRAM</div>
+    <div class="subtitle">EVEN IN DEATH, I'M THE HERO // 3D ARC REACTOR CORE</div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const container = document.getElementById('canvas-container');
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera.position.z = 6;
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      // Outer Holographic Sphere
+      const outerGeo = new THREE.IcosahedronGeometry(2.2, 3);
+      const outerMat = new THREE.MeshBasicMaterial({
+        color: 0x00f0ff,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.4
+      });
+      const outerSphere = new THREE.Mesh(outerGeo, outerMat);
+      scene.add(outerSphere);
+
+      // Middle Sphere Shell
+      const midGeo = new THREE.IcosahedronGeometry(1.6, 2);
+      const midMat = new THREE.MeshBasicMaterial({
+        color: 0x0051ff,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.6
+      });
+      const midSphere = new THREE.Mesh(midGeo, midMat);
+      scene.add(midSphere);
+
+      // Core Glowing Core
+      const coreGeo = new THREE.SphereGeometry(0.85, 32, 32);
+      const coreMat = new THREE.MeshBasicMaterial({
+        color: 0x00f0ff,
+        transparent: true,
+        opacity: 0.85
+      });
+      const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+      scene.add(coreMesh);
+
+      // Orbiting Scan Ring
+      const ringGeo = new THREE.TorusGeometry(2.8, 0.02, 16, 100);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.7 });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = Math.PI / 3;
+      scene.add(ringMesh);
+
+      // Particle Field
+      const particleCount = 300;
+      const particleGeo = new THREE.BufferGeometry();
+      const positions = new Float32Array(particleCount * 3);
+
+      for (let i = 0; i < particleCount; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 8;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 8;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 8;
+      }
+
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const particleMat = new THREE.PointsMaterial({
+        color: 0x00f0ff,
+        size: 0.04,
+        transparent: true,
+        opacity: 0.7
+      });
+      const particleSystem = new THREE.Points(particleGeo, particleMat);
+      scene.add(particleSystem);
+
+      // Animation Loop
+      let time = 0;
+      function animate() {
+        requestAnimationFrame(animate);
+        time += 0.02;
+
+        outerSphere.rotation.x += 0.003;
+        outerSphere.rotation.y += 0.006;
+
+        midSphere.rotation.x -= 0.006;
+        midSphere.rotation.y -= 0.009;
+
+        ringMesh.rotation.z += 0.01;
+        particleSystem.rotation.y += 0.002;
+
+        const pulse = 1.0 + Math.sin(time * 3) * 0.06;
+        coreMesh.scale.set(pulse, pulse, pulse);
+
+        renderer.render(scene, camera);
+      }
+
+      animate();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    });
+  </script>
+</body>
+</html>
