@@ -1,7 +1,7 @@
 [project]
-name = "friday-tony-stark-demo"
-version = "0.1.0"
-description = "Friday — A Tony Stark-inspired MCP server"
+name = "edith-tactical-ai"
+version = "2.0.0"
+description = "E.D.I.T.H. — Even In Death, I'm The Hero — Next-Gen Tactical AI Core"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -10,11 +10,15 @@ dependencies = [
     "livekit-agents[deepgram,groq,openai,sarvam,silero]>=1.5.1",
     "livekit-plugins-google>=1.5.1",
     "python-dotenv",
+    "psutil",
+    "beautifulsoup4",
 ]
 
 [project.scripts]
+edith = "server:main"
+edith_voice = "agent_edith:dev"
 friday = "server:main"
-friday_voice = "agent_friday:dev" # Points to the wrapper
+friday_voice = "agent_friday:dev"
 
 [build-system]
 requires = ["hatchling"]
