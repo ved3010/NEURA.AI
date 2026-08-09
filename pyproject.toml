@@ -19,6 +19,9 @@ edith = "server:main"
 edith_voice = "agent_edith:dev"
 friday = "server:main"
 friday_voice = "agent_friday:dev"
+ultron_siri = "floating_ultron:main"
+ultron_floating = "floating_ultron:main"
+
 
 [build-system]
 requires = ["hatchling"]
