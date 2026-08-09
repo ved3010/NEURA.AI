@@ -18,7 +18,7 @@ An Iron Man–inspired holographic orb built with **Next.js**, **Three.js**, and
 > 🔮 This is the open-source **interface** of [ULTRON](https://sagartamang.com/projects/ultron) — my AI that talks in real time and controls Android devices by itself. **[Read the write-up](https://sagartamang.com/projects/ultron)** or **[the X post](https://x.com/sagar_builds/status/2077277583646101921)**
 > 📱 **[Watch the demo on Instagram](https://www.instagram.com/p/DayJ17OTwvx/)**
 
-![ULTRON orb UI](docs/screenshot.png)
+![NEURA orb UI](docs/screenshot.png)
 
 ### Getting started (Frontend)
 
@@ -57,7 +57,7 @@ Click **GESTURES OFF** (or press `G`) and allow camera access, then:
 
 ---
 
-## 2. Voice Backend (E.V. — Tony Stark Demo)
+## 2. Voice Backend (NEURA.AI — Tony Stark Demo)
 
 🎉 **Official Public Release:** E.V. is now officially released to the public as a standalone application! You can easily install it without needing to set up the development environment.
 
