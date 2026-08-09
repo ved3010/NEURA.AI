@@ -1,6 +1,6 @@
-# E.D.I.T.H. & Ultron Architecture Reference Guide
+# Neura AI Architecture Reference Guide
 
-This document describes the high-level system architecture, MCP tool integrations, 3D WebGL renderer, and LiveKit voice streaming architecture for **E.D.I.T.H. v2.0**.
+This document describes the high-level system architecture, MCP tool integrations, 3D WebGL renderer, and LiveKit voice streaming architecture for **Neura AI**.
 
 ---
 
@@ -8,7 +8,7 @@ This document describes the high-level system architecture, MCP tool integration
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          E.D.I.T.H. TACTICAL AI                             │
+│                            NEURA AI ASSISTANT                               │
 └──────────────────────┬───────────────────────────────┬──────────────────────┘
                        │                               │
                        ▼                               ▼
@@ -16,7 +16,7 @@ This document describes the high-level system architecture, MCP tool integration
        │   FastMCP Tool Server (:8000) │     │ 3D Holographic UI / Desktop    │
        ├───────────────────────────────┤     ├────────────────────────────────┤
        │ • System Telemetry            │     │ • Three.js 3D Holographic Core │
-       │ • Stark Protocols             │     │ • MediaPipe Hand Tracker       │
+       │ • Tactical Protocols          │     │ • MediaPipe Hand Tracker       │
        │ • Autonomous Web Search       │     │ • Native macOS Desktop Overlay │
        │ • Workspace Analyzer          │     │ • Interactive Command Terminal │
        │ • Persistent Memory Store     │     └────────────────────────────────┘
