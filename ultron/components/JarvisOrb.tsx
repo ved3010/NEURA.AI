@@ -114,7 +114,7 @@ export default function JarvisOrb({ hideHud = false }: { hideHud?: boolean }) {
       {!hideHud && <div className="overlay-scanlines" />}
 
       <div className="hud hud-title" style={hideHud ? { top: 12, left: 12, fontSize: 11 } : {}}>
-        U.L.T.R.O.N.
+        N.E.U.R.A. A.I.
       </div>
 
       {!hideHud && (
