@@ -1,7 +1,7 @@
 [project]
-name = "edith-tactical-ai"
+name = "neura-ai"
 version = "2.0.0"
-description = "E.D.I.T.H. — Even In Death, I'm The Hero — Next-Gen Tactical AI Core"
+description = "Neura AI — Next-Gen Voice & Holographic AI Assistant"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -15,10 +15,12 @@ dependencies = [
 ]
 
 [project.scripts]
+neura = "server:main"
+neura_voice = "agent_edith:dev"
+neura_hologram = "floating_ultron:main"
+neura_floating = "floating_ultron:main"
 edith = "server:main"
 edith_voice = "agent_edith:dev"
-friday = "server:main"
-friday_voice = "agent_friday:dev"
 ultron_siri = "floating_ultron:main"
 ultron_floating = "floating_ultron:main"
 

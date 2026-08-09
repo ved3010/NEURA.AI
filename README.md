@@ -1,17 +1,17 @@
-# E.V.A.I. — Intelligent Digital Assistant
+# Neura AI — Voice & Holographic AI Assistant
 
-A Tony Stark-inspired digital assistant combining a real-time voice pipeline/MCP backend with an interactive 3D holographic orb interface.
+A next-generation AI assistant combining a real-time voice pipeline/MCP backend with an interactive 3D holographic orb interface.
 
 ---
 
 ## Repository Components
 
-1. **[Interactive Frontend (ULTRON Orb UI)](#1-interactive-frontend-ultron-orb-ui)**: Next.js + Three.js holographic orb controlled by webcam hand gestures.
-2. **[Voice Backend (E.V. — Tony Stark Demo)](#2-voice-backend-ev-tony-stark-demo)**: LiveKit voice pipeline agent and FastMCP server.
+1. **[Interactive Frontend (Neura AI Hologram UI)](#1-interactive-frontend-neura-ai-hologram-ui)**: Next.js + Three.js holographic orb desktop widget.
+2. **[Voice Backend (Neura AI Core)](#2-voice-backend-neura-ai-core)**: LiveKit voice pipeline agent and FastMCP server.
 
 ---
 
-## 1. Interactive Frontend (ULTRON Orb UI)
+## 1. Interactive Frontend (Neura AI Hologram UI)
 
 An Iron Man–inspired holographic orb built with **Next.js**, **Three.js**, and **MediaPipe** hand tracking — control it with your bare hands through your webcam.
 
