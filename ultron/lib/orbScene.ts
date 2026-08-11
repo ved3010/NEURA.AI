@@ -5,6 +5,8 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 
+export type OrbState = "idle" | "listening" | "thinking" | "speaking";
+
 export interface OrbSceneApi {
   /** Rotate the camera around the orb by the given angles (radians). */
   rotateBy(deltaTheta: number, deltaPhi: number): void;
@@ -13,6 +15,8 @@ export interface OrbSceneApi {
   zoomIn(): void;
   zoomOut(): void;
   resetView(): void;
+  setState(state: OrbState): void;
+  setAudioLevel(level: number): void;
   dispose(): void;
 }
 
@@ -667,10 +671,42 @@ export function createOrbScene(container: HTMLElement, options?: OrbSceneOptions
   let rafId = 0;
   let disposed = false;
 
+  let currentState: OrbState = "idle";
+  let audioLevel = 0;
+  let targetAudioLevel = 0;
+
+  function setState(state: OrbState) {
+    currentState = state;
+  }
+
+  function setAudioLevel(level: number) {
+    targetAudioLevel = Math.max(0, Math.min(1, level));
+  }
+
   function animate() {
     if (disposed) return;
     rafId = requestAnimationFrame(animate);
     const t = clock.getElapsedTime();
+
+    // Audio level smoothing
+    audioLevel += (targetAudioLevel - audioLevel) * 0.25;
+
+    let speedMult = 1.0;
+    const baseScale = options?.pureTransparent ? 0.68 : 1.0;
+    let currentScale = baseScale;
+
+    if (currentState === "listening") {
+      speedMult = 1.6;
+      currentScale = baseScale * 1.12;
+    } else if (currentState === "thinking") {
+      speedMult = 4.2;
+      currentScale = baseScale * 1.06;
+    } else if (currentState === "speaking") {
+      speedMult = 2.2;
+      currentScale = baseScale * (1.0 + audioLevel * 0.35);
+    }
+
+    orbGroup.scale.setScalar(currentScale);
 
     // Globe remains stationary
     orbGroup.position.set(0, 0, 0);
@@ -681,32 +717,31 @@ export function createOrbScene(container: HTMLElement, options?: OrbSceneOptions
     shell2.rotation.set(0, 0, 0);
 
     // Inner core subtle center spin
-    innerCore.rotation.y -= 0.005;
-    icoWire.rotation.x += 0.008;
-    icoWire.rotation.y += 0.010;
+    innerCore.rotation.y -= 0.005 * speedMult;
+    icoWire.rotation.x += 0.008 * speedMult;
+    icoWire.rotation.y += 0.010 * speedMult;
 
     // ONLY the golden glowing rings float & revolve dynamically around the center!
-    gRing1.rotation.y += 0.016;
-    gRing1.rotation.x = Math.sin(t * 0.5) * 0.15;
+    gRing1.rotation.y += 0.016 * speedMult;
+    gRing1.rotation.x = Math.sin(t * 0.5 * speedMult) * 0.15;
 
-    gRing2.rotation.z += 0.012;
-    gRing2.rotation.y -= 0.008;
+    gRing2.rotation.z += 0.012 * speedMult;
+    gRing2.rotation.y -= 0.008 * speedMult;
 
-    gRing3.rotation.y -= 0.018;
-    gRing3.rotation.x = Math.cos(t * 0.4) * 0.12;
+    gRing3.rotation.y -= 0.018 * speedMult;
+    gRing3.rotation.x = Math.cos(t * 0.4 * speedMult) * 0.12;
 
-    gRing4.rotation.x += 0.020;
-    gRing4.rotation.z += 0.010;
+    gRing4.rotation.x += 0.020 * speedMult;
+    gRing4.rotation.z += 0.010 * speedMult;
 
     // Core pulse — dramatic surges but mostly transparent
-    const wave1 = Math.sin(t * 1.2);
-    const wave3 = Math.pow(Math.max(0, Math.sin(t * 0.4)), 5); // rare big surge
-    const wave4 = Math.pow(Math.max(0, Math.sin(t * 0.7 + 2)), 8); // mega surge
-    const fadeOut = Math.pow(Math.max(0, Math.sin(t * 0.25)), 3); // periodic full transparency
+    const wave1 = Math.sin(t * 1.2 * speedMult);
+    const wave3 = Math.pow(Math.max(0, Math.sin(t * 0.4 * speedMult)), 5);
+    const wave4 = Math.pow(Math.max(0, Math.sin(t * 0.7 * speedMult + 2)), 8);
+    const fadeOut = Math.pow(Math.max(0, Math.sin(t * 0.25)), 3);
     const surge = wave3 * 1.5 + wave4 * 2.0;
-    const coreScale = 1 + surge + Math.sin(t * 5) * 0.05;
+    const coreScale = 1 + surge + Math.sin(t * 5 * speedMult) * 0.05;
     coreSphere.scale.setScalar(coreScale);
-    // Opacity: mostly very low (0-0.15), sometimes fully transparent, brief bright on surge
     const coreOpacity = Math.max(
       0,
       (0.08 + wave1 * 0.05 + surge * 0.2) * (1 - fadeOut * 0.95),
@@ -715,45 +750,14 @@ export function createOrbScene(container: HTMLElement, options?: OrbSceneOptions
     icoWire.scale.setScalar(1 + surge * 0.4);
     icoWireMat.opacity = Math.min(1, 0.6 + surge * 0.3);
 
-    // Debris orbits
-    debris.forEach((d) => {
-      const u = d.userData as DebrisOrbit;
-      const a = t * u.speed + u.phase;
-      d.position.set(
-        u.orbitR * Math.cos(a) * Math.cos(u.tiltX),
-        u.orbitR * Math.sin(u.tiltX) * Math.sin(a * 0.8) + Math.sin(a * 0.3 + u.tiltZ) * 0.2,
-        u.orbitR * Math.sin(a) * Math.cos(u.tiltZ),
-      );
-      d.rotation.x += 0.015;
-      d.rotation.z += 0.01;
-    });
-
-    // Text drift
-    const driftGroups: [THREE.Group, number][] = [
-      [textOuter, 1],
-      [textInner, 2],
-      [textAmbient, 1.2],
-    ];
-    for (const [group, mult] of driftGroups) {
-      group.children.forEach((sp) => {
-        const u = sp.userData as SpriteDrift;
-        u.theta += u.speed * mult;
-        sp.position.set(
-          u.r * Math.sin(u.phi) * Math.cos(u.theta),
-          u.r * Math.cos(u.phi),
-          u.r * Math.sin(u.phi) * Math.sin(u.theta),
-        );
-      });
-    }
-
     // Scan rings sweeping
-    const scanY1 = Math.sin(t * 0.4) * R1;
+    const scanY1 = Math.sin(t * 0.4 * speedMult) * R1;
     scanRing1.position.y = scanY1;
     const scanS1 = Math.sqrt(Math.max(0, R1 * R1 - scanY1 * scanY1)) / R1;
     scanRing1.scale.set(scanS1, scanS1, 1);
     (scanRing1.material as THREE.MeshBasicMaterial).opacity = 0.2 * scanS1;
 
-    const scanY2 = Math.sin(t * 0.6 + 2) * R3;
+    const scanY2 = Math.sin(t * 0.6 * speedMult + 2) * R3;
     scanRing2.position.y = scanY2;
     const scanS2 = Math.sqrt(Math.max(0, R3 * R3 - scanY2 * scanY2)) / R3;
     scanRing2.scale.set(scanS2, scanS2, 1);
@@ -830,6 +834,8 @@ export function createOrbScene(container: HTMLElement, options?: OrbSceneOptions
     zoomIn: () => zoomBy(0.65),
     zoomOut: () => zoomBy(1.55),
     resetView,
+    setState,
+    setAudioLevel,
     dispose,
   };
 }
