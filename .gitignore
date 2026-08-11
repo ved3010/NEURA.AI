@@ -105,3 +105,7 @@ poetry.toml
 .ruff_cache/
 pyrightconfig.json
 node_bin/
+*.png
+*.mp4
+*.pdf
+*.pptx
