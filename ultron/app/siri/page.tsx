@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createOrbScene, type OrbSceneApi, type OrbState } from "@/lib/orbScene";
 
-// Declare PyWebView window API typing
 declare global {
   interface Window {
     pywebview?: {
@@ -19,6 +18,7 @@ declare global {
     };
     webkitSpeechRecognition?: any;
     SpeechRecognition?: any;
+    webkitAudioContext?: typeof AudioContext;
   }
 }
 
@@ -27,12 +27,18 @@ export default function PureSiriOrbPage() {
   const sceneRef = useRef<OrbSceneApi | null>(null);
   const [statusText, setStatusText] = useState<string>("NEURA AI Standing By");
   const [orbState, setOrbState] = useState<OrbState>("idle");
+  const [micActive, setMicActive] = useState<boolean>(false);
+
   const isSpeakingRef = useRef<boolean>(false);
   const recognitionRef = useRef<any>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const orbStateRef = useRef<OrbState>("idle");
 
-  // Helper to change 3D Orb visual state
   const updateOrbState = (newState: OrbState) => {
     setOrbState(newState);
+    orbStateRef.current = newState;
     if (sceneRef.current) {
       sceneRef.current.setState(newState);
     }
@@ -50,7 +56,6 @@ export default function PureSiriOrbPage() {
     utterance.rate = 1.05;
     utterance.pitch = 1.0;
 
-    // Select natural voice if available
     const voices = window.speechSynthesis.getVoices();
     const preferredVoice = voices.find(
       (v) => v.name.includes("Samantha") || v.name.includes("Daniel") || v.name.includes("Google") || v.lang.startsWith("en")
@@ -63,7 +68,6 @@ export default function PureSiriOrbPage() {
     updateOrbState("speaking");
     setStatusText(text);
 
-    // Audio level pulse animation loop during speech
     let pulseAngle = 0;
     const pulseInterval = setInterval(() => {
       if (!isSpeakingRef.current) {
@@ -81,7 +85,7 @@ export default function PureSiriOrbPage() {
       sceneRef.current?.setAudioLevel(0);
       updateOrbState("idle");
       setStatusText("NEURA AI Standing By");
-      startListening();
+      restartSpeechRecognition();
     };
 
     utterance.onerror = () => {
@@ -90,13 +94,13 @@ export default function PureSiriOrbPage() {
       sceneRef.current?.setAudioLevel(0);
       updateOrbState("idle");
       setStatusText("NEURA AI Standing By");
-      startListening();
+      restartSpeechRecognition();
     };
 
     window.speechSynthesis.speak(utterance);
   };
 
-  // Process voice query via PyWebView API / local intelligence
+  // Process voice command via PyWebView API / local logic
   const processVoiceCommand = async (rawQuery: string) => {
     const query = rawQuery.toLowerCase().trim();
     if (!query) return;
@@ -112,14 +116,14 @@ export default function PureSiriOrbPage() {
         if (api?.get_telemetry) {
           responseText = await api.get_telemetry();
         } else {
-          responseText = "System telemetry nominal. CPU utilization at 12%, RAM 4.2 gigabytes, all subsystems operational, boss.";
+          responseText = "System telemetry nominal. CPU utilization at 14%, RAM 4.2 gigabytes, all Neura AI subsystems operational, boss.";
         }
       } else if (query.includes("protocol")) {
         const pName = query.replace("protocol", "").trim() || "stealth";
         if (api?.run_protocol) {
           responseText = await api.run_protocol(pName);
         } else {
-          responseText = `Initiating protocol ${pName.toUpperCase()}. Subsystems reconfigured and confirmed.`;
+          responseText = `Initiating protocol ${pName.toUpperCase()}. Tactical subsystems reconfigured and confirmed.`;
         }
       } else if (query.includes("network") || query.includes("scan")) {
         if (api?.scan_network) {
@@ -128,7 +132,7 @@ export default function PureSiriOrbPage() {
           responseText = "Scanning local network. 4 active IP nodes detected on subnet 192.168.1.0.";
         }
       } else if (query.includes("search") || query.includes("news") || query.includes("web")) {
-        const searchTerm = query.replace("search", "").replace("news", "").replace("web", "").replace("for", "").trim() || "latest technology updates";
+        const searchTerm = query.replace("search", "").replace("news", "").replace("web", "").replace("for", "").trim() || "latest AI news";
         if (api?.web_search) {
           responseText = await api.web_search(searchTerm);
         } else {
@@ -143,7 +147,7 @@ export default function PureSiriOrbPage() {
       } else if (query.includes("who are you") || query.includes("your name")) {
         responseText = "I am Neura AI — your voice-activated holographic desktop assistant. How can I assist you today, boss?";
       } else {
-        responseText = `Command "${rawQuery}" received and processed. Systems nominal and standing by.`;
+        responseText = `Command "${rawQuery}" received and executed. Subsystems nominal and standing by.`;
       }
     } catch (err) {
       responseText = "Command executed. Neura AI subsystems remain nominal.";
@@ -151,22 +155,65 @@ export default function PureSiriOrbPage() {
 
     setTimeout(() => {
       speakResponse(responseText);
-    }, 600);
+    }, 500);
   };
 
-  // Continuous Hands-Free Speech Recognition Listener
-  const startListening = async () => {
+  // Real-time Web Audio API Microphone Level Monitor
+  const setupWebAudioMic = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = stream;
+      setMicActive(true);
+
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const audioCtx = new AudioCtx();
+      audioContextRef.current = audioCtx;
+
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      const checkMicVolume = () => {
+        if (!analyserRef.current) return;
+        analyserRef.current.getByteFrequencyData(dataArray);
+
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        const average = sum / dataArray.length;
+        const normalizedLevel = Math.min(1.0, average / 64.0);
+
+        if (!isSpeakingRef.current && sceneRef.current) {
+          if (normalizedLevel > 0.08) {
+            sceneRef.current.setAudioLevel(normalizedLevel);
+            if (orbStateRef.current === "idle" && normalizedLevel > 0.18) {
+              updateOrbState("listening");
+            }
+          } else {
+            sceneRef.current.setAudioLevel(0);
+          }
+        }
+
+        requestAnimationFrame(checkMicVolume);
+      };
+
+      checkMicVolume();
+    } catch (err) {
+      console.warn("[NEURA AI] Web Audio Mic Setup:", err);
+    }
+  };
+
+  // Speech Recognition setup
+  const restartSpeechRecognition = () => {
     const SpeechRecognitionObj = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognitionObj || isSpeakingRef.current) return;
-
-    // Explicitly request microphone permission on macOS WKWebView
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      try {
-        await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch (err) {
-        console.warn("[NEURA AI] Mic permission pending:", err);
-      }
-    }
 
     try {
       if (recognitionRef.current) {
@@ -185,7 +232,6 @@ export default function PureSiriOrbPage() {
           const transcript = event.results[i][0].transcript.trim();
           const lower = transcript.toLowerCase();
 
-          // Phonetic wake words (Neura / Neural / Nora / Newra / Nura / Ultron / Edith)
           const isWakeWord =
             lower.includes("neura") ||
             lower.includes("hey neura") ||
@@ -196,14 +242,14 @@ export default function PureSiriOrbPage() {
             lower.includes("new ra") ||
             lower.includes("nura") ||
             lower.includes("ultron") ||
-            lower.includes("hey ultron") ||
             lower.includes("edith") ||
-            lower.includes("hey edith");
+            lower.includes("hey") ||
+            lower.includes("hi") ||
+            lower.includes("hello");
 
-          if (isWakeWord) {
+          if (isWakeWord || orbStateRef.current === "listening") {
             updateOrbState("listening");
 
-            // Extract command text after wake word
             const commandText = lower
               .replace(/hey\s+/g, "")
               .replace(/hi\s+/g, "")
@@ -226,30 +272,26 @@ export default function PureSiriOrbPage() {
               speakResponse("Neura AI standing by. How can I help, boss?");
             }
             break;
-          } else if (orbState === "listening" && lower.length > 2) {
-            recognition.stop();
-            processVoiceCommand(lower);
-            break;
           }
         }
       };
 
-      recognition.onerror = (err: any) => {
+      recognition.onerror = () => {
         setTimeout(() => {
-          if (!isSpeakingRef.current) startListening();
-        }, 1200);
+          if (!isSpeakingRef.current) restartSpeechRecognition();
+        }, 1000);
       };
 
       recognition.onend = () => {
         setTimeout(() => {
-          if (!isSpeakingRef.current) startListening();
+          if (!isSpeakingRef.current) restartSpeechRecognition();
         }, 800);
       };
 
       recognition.start();
       recognitionRef.current = recognition;
     } catch (e) {
-      console.warn("[NEURA AI] Speech recognition initialization:", e);
+      console.warn("[NEURA AI] Speech recognition:", e);
     }
   };
 
@@ -268,7 +310,6 @@ export default function PureSiriOrbPage() {
       setStatusText("NEURA AI Standing By");
     } else {
       updateOrbState("listening");
-      setStatusText("Listening... Say something");
       speakResponse("Neura AI standing by. How can I help, boss?");
     }
   };
@@ -280,18 +321,25 @@ export default function PureSiriOrbPage() {
     const scene = createOrbScene(container, { pureTransparent: true });
     sceneRef.current = scene;
 
-    // Initialize hands-free voice listener
+    // Initialize Web Audio Mic & Speech Recognition
+    setupWebAudioMic();
     const timer = setTimeout(() => {
-      startListening();
-    }, 1000);
+      restartSpeechRecognition();
+    }, 800);
 
     return () => {
       clearTimeout(timer);
       if (recognitionRef.current) {
-        recognitionRef.current.abort();
+        try { recognitionRef.current.abort(); } catch (e) {}
       }
       if ("speechSynthesis" in window) {
         window.speechSynthesis.cancel();
+      }
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
       }
       scene.dispose();
       sceneRef.current = null;
@@ -299,7 +347,7 @@ export default function PureSiriOrbPage() {
   }, []);
 
   return (
-    <div className="pure-orb-wrapper" onClick={handleOrbClick} title="Click to interact with Neura AI">
+    <div className="pure-orb-wrapper" onClick={handleOrbClick} title="Click or say 'Hey Neura' to talk to Neura AI">
       <div ref={containerRef} className="pure-orb-canvas" />
     </div>
   );
