@@ -28,6 +28,7 @@ export default function PureSiriOrbPage() {
   const [statusText, setStatusText] = useState<string>("NEURA AI Standing By");
   const [orbState, setOrbState] = useState<OrbState>("idle");
   const [micActive, setMicActive] = useState<boolean>(false);
+  const [audioVol, setAudioVol] = useState<number>(0);
 
   const isSpeakingRef = useRef<boolean>(false);
   const recognitionRef = useRef<any>(null);
@@ -190,6 +191,8 @@ export default function PureSiriOrbPage() {
         const average = sum / dataArray.length;
         const normalizedLevel = Math.min(1.0, average / 64.0);
 
+        setAudioVol(Math.round(normalizedLevel * 100));
+
         if (!isSpeakingRef.current && sceneRef.current) {
           if (normalizedLevel > 0.08) {
             sceneRef.current.setAudioLevel(normalizedLevel);
@@ -206,6 +209,7 @@ export default function PureSiriOrbPage() {
 
       checkMicVolume();
     } catch (err) {
+      setMicActive(false);
       console.warn("[NEURA AI] Web Audio Mic Setup:", err);
     }
   };
@@ -297,6 +301,11 @@ export default function PureSiriOrbPage() {
 
   // Manual click / tap trigger
   const handleOrbClick = () => {
+    // Explicitly initialize Web Audio mic stream on user click gesture
+    if (!micActive) {
+      setupWebAudioMic();
+    }
+
     if (isSpeakingRef.current) {
       window.speechSynthesis.cancel();
       isSpeakingRef.current = false;
@@ -349,6 +358,22 @@ export default function PureSiriOrbPage() {
   return (
     <div className="pure-orb-wrapper" onClick={handleOrbClick} title="Click or say 'Hey Neura' to talk to Neura AI">
       <div ref={containerRef} className="pure-orb-canvas" />
+      {/* Live Mic Diagnostic Indicator */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 4,
+          fontSize: 9,
+          fontFamily: "monospace",
+          color: micActive ? "#00f0ff" : "#ff5533",
+          letterSpacing: "0.08em",
+          pointerEvents: "none",
+          opacity: 0.75,
+          textShadow: "0 0 4px rgba(0,240,255,0.6)",
+        }}
+      >
+        {micActive ? `● MIC ${audioVol}%` : `● CLICK ORB FOR MIC`}
+      </div>
     </div>
   );
 }
