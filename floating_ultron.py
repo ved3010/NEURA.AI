@@ -42,6 +42,15 @@ class UltronAgentApi:
     def get_tasks_list(self):
         return get_tasks()
 
+    def speak(self, text):
+        """Speak text natively on macOS out loud with zero latency."""
+        try:
+            safe_text = text.replace("'", "")
+            subprocess.Popen(f"say -v Samantha '{safe_text}'", shell=True)
+            return "OK"
+        except Exception as e:
+            return str(e)
+
 
 def ensure_nextjs_server():
     """Ensure Neura AI Next.js server is active on port 3000."""

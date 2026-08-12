@@ -14,6 +14,7 @@ declare global {
         save_memory?: (key: string, val: string) => Promise<string>;
         get_tasks_list?: () => Promise<string>;
         run_protocol?: (name: string) => Promise<string>;
+        speak?: (text: string) => Promise<string>;
       };
     };
     webkitSpeechRecognition?: any;
@@ -36,6 +37,8 @@ export default function PureSiriOrbPage() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const orbStateRef = useRef<OrbState>("idle");
+  const voiceSpeechTimerRef = useRef<number>(0);
+  const voiceTriggeredRef = useRef<boolean>(false);
 
   const updateOrbState = (newState: OrbState) => {
     setOrbState(newState);
@@ -45,24 +48,29 @@ export default function PureSiriOrbPage() {
     }
   };
 
-  // Speak text via SpeechSynthesis with audio-reactive ring pulsing
+  // Speak text via PyWebView native macOS TTS & Web SpeechSynthesis with 3D ring pulsing
   const speakResponse = (text: string) => {
-    if (!("speechSynthesis" in window)) {
-      updateOrbState("idle");
-      return;
+    // 1. PyWebView Native macOS zero-latency speech synthesis
+    if (window.pywebview?.api?.speak) {
+      try {
+        window.pywebview.api.speak(text);
+      } catch (e) {}
     }
 
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.05;
-    utterance.pitch = 1.0;
-
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(
-      (v) => v.name.includes("Samantha") || v.name.includes("Daniel") || v.name.includes("Google") || v.lang.startsWith("en")
-    );
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
+    // 2. Web SpeechSynthesis
+    if ("speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.05;
+        utterance.pitch = 1.0;
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(
+          (v) => v.name.includes("Samantha") || v.name.includes("Daniel") || v.name.includes("Google") || v.lang.startsWith("en")
+        );
+        if (preferredVoice) utterance.voice = preferredVoice;
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {}
     }
 
     isSpeakingRef.current = true;
@@ -80,25 +88,17 @@ export default function PureSiriOrbPage() {
       sceneRef.current?.setAudioLevel(level);
     }, 40);
 
-    utterance.onend = () => {
+    // Estimate speaking duration for animation reset
+    const durationMs = Math.max(2200, text.length * 75);
+    setTimeout(() => {
       isSpeakingRef.current = false;
       clearInterval(pulseInterval);
       sceneRef.current?.setAudioLevel(0);
       updateOrbState("idle");
       setStatusText("NEURA AI Standing By");
+      voiceTriggeredRef.current = false;
       restartSpeechRecognition();
-    };
-
-    utterance.onerror = () => {
-      isSpeakingRef.current = false;
-      clearInterval(pulseInterval);
-      sceneRef.current?.setAudioLevel(0);
-      updateOrbState("idle");
-      setStatusText("NEURA AI Standing By");
-      restartSpeechRecognition();
-    };
-
-    window.speechSynthesis.speak(utterance);
+    }, durationMs);
   };
 
   // Process voice command via PyWebView API / local logic
@@ -156,10 +156,10 @@ export default function PureSiriOrbPage() {
 
     setTimeout(() => {
       speakResponse(responseText);
-    }, 500);
+    }, 400);
   };
 
-  // Real-time Web Audio API Microphone Level Monitor
+  // Real-time Web Audio API Microphone Level Monitor with Voice Level Auto-Trigger
   const setupWebAudioMic = async () => {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
@@ -196,11 +196,23 @@ export default function PureSiriOrbPage() {
         if (!isSpeakingRef.current && sceneRef.current) {
           if (normalizedLevel > 0.08) {
             sceneRef.current.setAudioLevel(normalizedLevel);
-            if (orbStateRef.current === "idle" && normalizedLevel > 0.18) {
-              updateOrbState("listening");
+
+            // If user is speaking (voice level > 18%), count voice duration
+            if (normalizedLevel > 0.18) {
+              voiceSpeechTimerRef.current += 1;
+              if (
+                voiceSpeechTimerRef.current > 12 &&
+                !voiceTriggeredRef.current &&
+                orbStateRef.current !== "thinking"
+              ) {
+                voiceTriggeredRef.current = true;
+                updateOrbState("listening");
+                speakResponse("Neura AI standing by. How can I help, boss?");
+              }
             }
           } else {
             sceneRef.current.setAudioLevel(0);
+            voiceSpeechTimerRef.current = 0;
           }
         }
 
