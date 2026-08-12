@@ -155,70 +155,101 @@ export default function PureSiriOrbPage() {
   };
 
   // Continuous Hands-Free Speech Recognition Listener
-  const startListening = () => {
+  const startListening = async () => {
     const SpeechRecognitionObj = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognitionObj || isSpeakingRef.current) return;
 
+    // Explicitly request microphone permission on macOS WKWebView
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        console.warn("[NEURA AI] Mic permission pending:", err);
+      }
+    }
+
     try {
       if (recognitionRef.current) {
-        recognitionRef.current.abort();
+        try { recognitionRef.current.abort(); } catch (e) {}
       }
 
       const recognition = new SpeechRecognitionObj();
       recognition.continuous = true;
-      recognition.interimResults = false;
+      recognition.interimResults = true;
       recognition.lang = "en-US";
 
       recognition.onresult = (event: any) => {
-        const lastIndex = event.results.length - 1;
-        const transcript = event.results[lastIndex][0].transcript.trim();
-        const lower = transcript.toLowerCase();
+        if (isSpeakingRef.current) return;
 
-        // Check for wake words or direct command input
-        const isWakeWord =
-          lower.includes("neura") ||
-          lower.includes("hey neura") ||
-          lower.includes("ultron") ||
-          lower.includes("hey ultron") ||
-          lower.includes("edith") ||
-          lower.includes("hey edith");
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript.trim();
+          const lower = transcript.toLowerCase();
 
-        if (isWakeWord || orbState === "listening") {
-          updateOrbState("listening");
-          const commandText = lower
-            .replace("hey neura", "")
-            .replace("neura", "")
-            .replace("hey ultron", "")
-            .replace("ultron", "")
-            .replace("hey edith", "")
-            .replace("edith", "")
-            .trim();
+          // Phonetic wake words (Neura / Neural / Nora / Newra / Nura / Ultron / Edith)
+          const isWakeWord =
+            lower.includes("neura") ||
+            lower.includes("hey neura") ||
+            lower.includes("hi neura") ||
+            lower.includes("neural") ||
+            lower.includes("nora") ||
+            lower.includes("newra") ||
+            lower.includes("new ra") ||
+            lower.includes("nura") ||
+            lower.includes("ultron") ||
+            lower.includes("hey ultron") ||
+            lower.includes("edith") ||
+            lower.includes("hey edith");
 
-          if (commandText.length > 2) {
+          if (isWakeWord) {
+            updateOrbState("listening");
+
+            // Extract command text after wake word
+            const commandText = lower
+              .replace(/hey\s+/g, "")
+              .replace(/hi\s+/g, "")
+              .replace(/hello\s+/g, "")
+              .replace("neura", "")
+              .replace("neural", "")
+              .replace("nora", "")
+              .replace("newra", "")
+              .replace("new ra", "")
+              .replace("nura", "")
+              .replace("ultron", "")
+              .replace("edith", "")
+              .trim();
+
             recognition.stop();
-            processVoiceCommand(commandText);
-          } else {
-            setStatusText("Listening... Speak your command");
+
+            if (commandText.length > 2) {
+              processVoiceCommand(commandText);
+            } else {
+              speakResponse("Neura AI standing by. How can I help, boss?");
+            }
+            break;
+          } else if (orbState === "listening" && lower.length > 2) {
+            recognition.stop();
+            processVoiceCommand(lower);
+            break;
           }
         }
       };
 
-      recognition.onerror = () => {
+      recognition.onerror = (err: any) => {
         setTimeout(() => {
           if (!isSpeakingRef.current) startListening();
-        }, 1500);
+        }, 1200);
       };
 
       recognition.onend = () => {
         setTimeout(() => {
           if (!isSpeakingRef.current) startListening();
-        }, 1000);
+        }, 800);
       };
 
       recognition.start();
       recognitionRef.current = recognition;
     } catch (e) {
-      // Speech recognition fallback
+      console.warn("[NEURA AI] Speech recognition initialization:", e);
     }
   };
 
