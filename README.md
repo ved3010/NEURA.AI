@@ -1,6 +1,16 @@
 # Neura AI — Voice & Holographic AI Assistant
 
-A next-generation AI assistant combining a real-time voice pipeline/MCP backend with an interactive 3D holographic orb interface.
+## Project Overview
+Neura AI is a next-generation AI assistant that combines a real-time voice pipeline with an interactive 3D holographic orb interface. It is interesting because it demonstrates how advanced AI models and spatial interfaces can run efficiently on Arm64 environments (Apple Silicon macOS), combining high-performance computing with an intuitive user experience.
+
+## Functionality / Output
+The project provides a fully functional desktop assistant featuring:
+- **3D Holographic UI**: A WebGL-based interface built with Next.js and Three.js, incorporating MediaPipe hand tracking for gesture control.
+- **Voice Agent**: A LiveKit voice pipeline that utilizes a powerful LLM for reasoning and OpenAI TTS for speaking back in real time.
+- **FastMCP Server**: Exposes system tools (news, web search, system info) to the voice agent.
+
+## Setup Instructions
+The application is designed to run seamlessly on Arm-powered devices like Apple Silicon Macs (Arm64 environment). Please follow the frontend and backend setup sections below to build, run, and validate the project locally on your machine.
 
 ---
 
